@@ -59,6 +59,8 @@ options.
 
 Load and inspect the fang_et_al_genotypes.txt and snp_position.txt files
 ```{r}
+install.packages("ggplot2")
+library(ggplot2)
 
 fang <- read.table("fang_et_al_genotypes.txt")
 snp <- read.table("snp_position.txt", header = TRUE, fill = TRUE)
