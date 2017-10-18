@@ -2,8 +2,8 @@
 title: "README"
 output: html_document
 ---
-**Corredor_comment= Hi Aimee Schulz! I would like to start my comment saying that the organization of this Readme.Rmd file is very well done and easy to follow. Good job! 
-However, I must also tell you that I was a little confused at first to find it. Since all your output files are gathered together with this Readme file. I think if you make folders for your outputs it could make your Assigment folder easier to follow. I hope this comment doesn't bothered you. I just want to help you to improve your assigment organization files.**
+*Corredor_comment= Hi Aimee Schulz! I would like to start my comment saying that the organization of this Readme.Rmd file is very well done and easy to follow. Good job! 
+However, I must also tell you that I was a little confused at first to find it. Since all your output files are gathered together with this Readme file. I think if you make folders for your outputs it could make your Assigment folder easier to follow. I hope this comment doesn't bothered you. I just want to help you to improve your assigment organization files.*
 
 # Final R Assignment
 ## Project Background
@@ -82,7 +82,7 @@ dim(snp)
 colnames(snp)
 ```
 
-**Corredor_comment= Nice job! that object.size function is a clever choice to describe the data **
+*Corredor_comment= Nice job! that object.size function is a clever choice to describe the data *
 
 
 ## Format for a downstream analysis - join so that both genotypes and positions are in a series of input files
