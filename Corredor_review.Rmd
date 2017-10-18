@@ -1,0 +1,500 @@
+---
+title: "README"
+output: html_document
+---
+*Corredor_comment= Hi Aimee Schulz! I would like to start my comment saying that the organization of this Readme.Rmd file is very well done and easy to follow. Good job! 
+However, I must also tell you that I was a little confused at first to find it. Since all your output files are gathered together with this Readme file. I think if you make folders for your outputs it could make your Assigment folder easier to follow. I hope this comment doesn't bothered you. I just want to help you to improve your assigment organization files.*
+
+# Final R Assignment
+## Project Background
+
+### Data Inspection
+
+* Load the two data files you used for your UNIX assignment in R and inspect their context. Use as many
+functions as you can to describe their structure and their dimensions (file size, number of columns, number of
+lines, ect...). You don't have to limit yourselves to the functions we learned in class.
+*As a reminder, the files are:
+	 fang_et_al_genotypes.txt : a published SNP data set including maize, teosinte (i.e., wild maize),
+and Tripsacum (a close outgroup to the genus Zea) individuals
+	snp_position.txt : an additional data file that includes the SNP id (first column), chromosome
+location (third column), nucleotide location (fourth column) and other information for the SNPs genotyped
+in the fang_et_al_genotypes.txt file
+
+
+### Part 1: Data Processing
+
+Manipulate the two files in R in order to format them for a downstream analysis. During this process, we will
+need to join these data sets so that we have both genotypes and positions in a series of input files. 
+All our files will be formatted such that the first column is "SNP_ID", the second column is "Chromosome", the third column is "Position", and subsequent columns are genotype data from either maize or teosinte individuals.
+
+* For maize (Group = ZMMIL, ZMMLR, and ZMMMR in the third column of the
+fang_et_al_genotypes.txt file) we want 20 files in total:
+	* 10 files (1 for each chromosome) with SNPs ordered based on increasing position values and with missing
+data encoded by this symbol: ?
+	* 10 files (1 for each chromosome) with SNPs ordered based on decreasing position values and with
+missing data encoded by this symbol: -
+
+* For teosinte (Group = ZMPBA, ZMPIL, and ZMPJA in the third column of the
+fang_et_al_genotypes.txt file) we want 20 files in total:
+	* 10 files (1 for each chromosome) with SNPs ordered based on increasing position values and with missing
+data encoded by this symbol: ?
+	* 10 files (1 for each chromosome) with SNPs ordered based on decreasing position values and with
+missing data encoded by this symbol: -
+
+* A total of 40 files will therefore be produced.
+
+### Part 2: Visualization
+
+* Plot the total number of SNPs in our dataset on each chromosome. What groups contribute most of these
+SNPs?
+
+* Create a new column to indicate whether a particular site is homozygous (has the same nucleotide on both
+chromosomes (i.e., A/A, C/C, G/G, T/T) or heterozygous (otherwise)). Recode the missing data as NA. Sort
+your dataframe using Group and Species_ID values. Make a graph that shows the proportion of homozygous
+and heterozygous sites as well as missing data in each species (you won't be able to see species names) and
+each group. For groups normalize the height of individual bars using one of the ggplot "position adjustments"
+options.
+
+* Visualize one other feature of the dataset. The choice is up to you!
+
+## Project Script and Data
+### Part 1
+
+Load and inspect the fang_et_al_genotypes.txt and snp_position.txt files
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+
+fang <- read.table("fang_et_al_genotypes.txt")
+snp <- read.table("snp_position.txt", header = TRUE, fill = TRUE)
+object.size(fang)
+typeof(fang)
+class(fang)
+str(fang)
+dim(fang)
+colnames(fang)
+
+object.size(snp)
+typeof(fang)
+class(fang)
+str(fang)
+dim(snp)
+colnames(snp)
+```
+
+*Corredor_comment= Nice job! that object.size function is a clever choice to describe the data *
+
+
+## Format for a downstream analysis - join so that both genotypes and positions are in a series of input files
+	First column SNP_ID, 2nd Chromosome, 3rd Position
+```{r}
+fnames <- unique(fang$Group)
+fznames <- fnames[c(14,15,16)]
+ftnames <- fnames[c(6,12,7)]
+zfang <- fang[as.character(fang$Group) %in% fznames, ]
+tfang <- fang[as.character(fang$Group) %in% ftnames, ]
+```
+**Corredor_comment= Interesting way to gathered Maize and Teosinte groups =)**
+
+
+```{r}
+tzea <- t(zfang)
+dfzea <- as.data.frame(tzea, stringsAsFactors = FALSE)
+dfzea$Sample_ID <- row.names(dfzea)
+names(dfzea) <- as.character(dfzea[1,])
+dfzea$Sample_ID
+dfzea <- dfzea[4:986]
+zeamerge <- merge(snp,dfzea,by.x = "SNP_ID",by.y = "Sample_ID")
+
+tteo <- t(tfang)
+dfteo <- as.data.frame(tteo, stringsAsFactors = FALSE)
+dfteo$Sample_ID <- row.names(dfteo)
+names(dfteo) <- as.character(dfteo[1,])
+dfteo$Sample_ID
+dfteo <- dfteo[4:986]
+teomerge <- merge(snp,dfteo,by.x = "SNP_ID",by.y = "Sample_ID")
+```
+
+**Corredor_comment= About row.names() function it is necesary to create the new column Sample_ID. right? In order to merge by ID. Good job!*
+
+Rearrange columns of teomerge and zeamerge to fit instructions
+
+
+```{r}
+teosort <- teomerge [,c(1, 3, 4, 2, 5:990)]
+zeasort <- zeamerge [,c(1, 3, 4, 2, 5:1588)]
+```
+
+Sort by chromosomes, to be sorted in ascending order
+
+**Corredor_comment= In this case I want to propose something to you*
+**You know to make thinghs simple and prety :*
+```
+incTeosort<-teosort[order(as.numeric(as.character(teosort$Position))),]
+
+for(i in 1:10){
+  T_files<- incTeosort[incTeosort$Chromosome==i,]
+  write.csv(T_files, sprintf("TChr_%d_",i),row.names=F )
+}
+```
+**Corredor_comment= That was my example for the increasing order. It runs correctly. You can try for decreasing. Don't forget to use the (-) sign**
+
+```{r}
+ZChr1 <- zeasort[zeasort$Chromosome == "1", ]
+ZChr2 <- zeasort[zeasort$Chromosome == "2", ]
+ZChr3 <- zeasort[zeasort$Chromosome == "3", ]
+ZChr4 <- zeasort[zeasort$Chromosome == "4", ]
+ZChr5 <- zeasort[zeasort$Chromosome == "5", ]
+ZChr6 <- zeasort[zeasort$Chromosome == "6", ]
+ZChr7 <- zeasort[zeasort$Chromosome == "7", ]
+ZChr8 <- zeasort[zeasort$Chromosome == "8", ]
+ZChr9 <- zeasort[zeasort$Chromosome == "9", ]
+ZChr10 <- zeasort[zeasort$Chromosome == "10", ]
+
+TChr10 <- teosort[teosort$Chromosome == "10", ]
+TChr9 <- teosort[teosort$Chromosome == "9", ]
+TChr8 <- teosort[teosort$Chromosome == "8", ]
+TChr7 <- teosort[teosort$Chromosome == "7", ]
+TChr6 <- teosort[teosort$Chromosome == "6", ]
+TChr5 <- teosort[teosort$Chromosome == "5", ]
+TChr4 <- teosort[teosort$Chromosome == "4", ]
+TChr3 <- teosort[teosort$Chromosome == "3", ]
+TChr2 <- teosort[teosort$Chromosome == "2", ]
+TChr1 <- teosort[teosort$Chromosome == "1", ]
+```
+
+Sort by chromosomes, to be sorted in descending order
+
+```{r}
+ZChr1_des <- zeasort[zeasort$Chromosome == "1", ]
+ZChr2_des <- zeasort[zeasort$Chromosome == "2", ]
+ZChr3_des <- zeasort[zeasort$Chromosome == "3", ]
+ZChr4_des <- zeasort[zeasort$Chromosome == "4", ]
+ZChr5_des <- zeasort[zeasort$Chromosome == "5", ]
+ZChr6_des <- zeasort[zeasort$Chromosome == "6", ]
+ZChr7_des <- zeasort[zeasort$Chromosome == "7", ]
+ZChr8_des <- zeasort[zeasort$Chromosome == "8", ]
+ZChr9_des <- zeasort[zeasort$Chromosome == "9", ]
+ZChr10_des <- zeasort[zeasort$Chromosome == "10", ]
+
+TChr10_des <- teosort[teosort$Chromosome == "10", ]
+TChr9_des <- teosort[teosort$Chromosome == "9", ]
+TChr8_des <- teosort[teosort$Chromosome == "8", ]
+TChr7_des <- teosort[teosort$Chromosome == "7", ]
+TChr6_des <- teosort[teosort$Chromosome == "6", ]
+TChr5_des <- teosort[teosort$Chromosome == "5", ]
+TChr4_des <- teosort[teosort$Chromosome == "4", ]
+TChr3_des <- teosort[teosort$Chromosome == "3", ]
+TChr2_des <- teosort[teosort$Chromosome == "2", ]
+TChr1_des <- teosort[teosort$Chromosome == "1", ]
+```
+
+Sort into ascending
+
+```{r}
+ZChr1_asc <- ZChr1[order(as.numeric(as.character(ZChr1$Position))), ]
+ZChr2_asc <- ZChr2[order(as.numeric(as.character(ZChr2$Position))), ]
+ZChr3_asc <- ZChr3[order(as.numeric(as.character(ZChr3$Position))), ]
+ZChr4_asc <- ZChr4[order(as.numeric(as.character(ZChr4$Position))), ]
+ZChr5_asc <- ZChr5[order(as.numeric(as.character(ZChr5$Position))), ]
+ZChr6_asc <- ZChr6[order(as.numeric(as.character(ZChr6$Position))), ]
+ZChr7_asc <- ZChr7[order(as.numeric(as.character(ZChr7$Position))), ]
+ZChr8_asc <- ZChr8[order(as.numeric(as.character(ZChr8$Position))), ]
+ZChr9_asc <- ZChr9[order(as.numeric(as.character(ZChr9$Position))), ]
+ZChr10_asc <- ZChr10[order(as.numeric(as.character(ZChr10$Position))), ]
+
+TChr1_asc <- TChr1[order(as.numeric(as.character(TChr1$Position))), ]
+TChr2_asc <- TChr2[order(as.numeric(as.character(TChr2$Position))), ]
+TChr3_asc <- TChr3[order(as.numeric(as.character(TChr3$Position))), ]
+TChr4_asc <- TChr4[order(as.numeric(as.character(TChr4$Position))), ]
+TChr5_asc <- TChr5[order(as.numeric(as.character(TChr5$Position))), ]
+TChr6_asc <- TChr6[order(as.numeric(as.character(TChr6$Position))), ]
+TChr7_asc <- TChr7[order(as.numeric(as.character(TChr7$Position))), ]
+TChr8_asc <- TChr8[order(as.numeric(as.character(TChr8$Position))), ]
+TChr9_asc <- TChr9[order(as.numeric(as.character(TChr9$Position))), ]
+TChr10_asc <- TChr10[order(as.numeric(as.character(TChr10$Position))), ]
+```
+
+
+Sort into descending
+
+```{r}
+ZChr1_des <- ZChr1[order(as.numeric(as.character(ZChr1$Position)) , decreasing = TRUE), ]
+ZChr2_des <- ZChr2[order(as.numeric(as.character(ZChr2$Position)) , decreasing = TRUE), ]
+ZChr3_des <- ZChr3[order(as.numeric(as.character(ZChr3$Position)) , decreasing = TRUE), ]
+ZChr4_des <- ZChr4[order(as.numeric(as.character(ZChr4$Position)) , decreasing = TRUE), ]
+ZChr5_des <- ZChr5[order(as.numeric(as.character(ZChr5$Position)) , decreasing = TRUE), ]
+ZChr6_des <- ZChr6[order(as.numeric(as.character(ZChr6$Position)) , decreasing = TRUE), ]
+ZChr7_des <- ZChr7[order(as.numeric(as.character(ZChr7$Position)) , decreasing = TRUE), ]
+ZChr8_des <- ZChr8[order(as.numeric(as.character(ZChr8$Position)) , decreasing = TRUE), ]
+ZChr9_des <- ZChr9[order(as.numeric(as.character(ZChr9$Position)) , decreasing = TRUE), ]
+ZChr10_des <- ZChr10[order(as.numeric(as.character(ZChr10$Position)) , decreasing = TRUE), ]
+
+TChr1_des <- TChr1[order(as.numeric(as.character(TChr1$Position)) , decreasing = TRUE), ]
+TChr2_des <- TChr2[order(as.numeric(as.character(TChr2$Position)) , decreasing = TRUE), ]
+TChr3_des <- TChr3[order(as.numeric(as.character(TChr3$Position)) , decreasing = TRUE), ]
+TChr4_des <- TChr4[order(as.numeric(as.character(TChr4$Position)) , decreasing = TRUE), ]
+TChr5_des <- TChr5[order(as.numeric(as.character(TChr5$Position)) , decreasing = TRUE), ]
+TChr6_des <- TChr6[order(as.numeric(as.character(TChr6$Position)) , decreasing = TRUE), ]
+TChr7_des <- TChr7[order(as.numeric(as.character(TChr7$Position)) , decreasing = TRUE), ]
+TChr8_des <- TChr8[order(as.numeric(as.character(TChr8$Position)) , decreasing = TRUE), ]
+TChr9_des <- TChr9[order(as.numeric(as.character(TChr9$Position)) , decreasing = TRUE), ]
+TChr10_des <- TChr10[order(as.numeric(as.character(TChr10$Position)) , decreasing = TRUE), ]
+```
+
+Replace "?/?" with "-/-" in descending files
+
+```{r}
+ZChr1_des[ZChr1_des == "?/?"] <- "-/-"
+ZChr2_des[ZChr2_des == "?/?"] <- "-/-"
+ZChr3_des[ZChr3_des == "?/?"] <- "-/-"
+ZChr4_des[ZChr4_des == "?/?"] <- "-/-"
+ZChr5_des[ZChr5_des == "?/?"] <- "-/-"
+ZChr6_des[ZChr6_des == "?/?"] <- "-/-"
+ZChr7_des[ZChr7_des == "?/?"] <- "-/-"
+ZChr8_des[ZChr8_des == "?/?"] <- "-/-"
+ZChr9_des[ZChr9_des == "?/?"] <- "-/-"
+ZChr10_des[ZChr10_des == "?/?"] <- "-/-"
+
+TChr1_des[TChr1_des == "?/?"] <- "-/-"
+TChr2_des[TChr2_des == "?/?"] <- "-/-"
+TChr3_des[TChr3_des == "?/?"] <- "-/-"
+TChr4_des[TChr4_des == "?/?"] <- "-/-"
+TChr5_des[TChr5_des == "?/?"] <- "-/-"
+TChr6_des[TChr6_des == "?/?"] <- "-/-"
+TChr7_des[TChr7_des == "?/?"] <- "-/-"
+TChr8_des[TChr8_des == "?/?"] <- "-/-"
+TChr9_des[TChr9_des == "?/?"] <- "-/-"
+TChr10_des[TChr10_des == "?/?"] <- "-/-"
+```
+
+**Corredor_comment= In order to avoid this repetitive scripts I challengue you to look for a sapply or other functions that can make the work in just one line =)*
+
+Remove "multiple" position rows
+Located in: T2, T4, T7, T9
+Z2, Z4, Z6, Z7, Z9
+
+```{r}
+TChr2_asc[TChr2_asc == "multiple"] <- NA
+TChr2_asc <- TChr2_asc[!is.na(TChr2_asc$Position),]
+TChr4_asc[TChr4_asc == "multiple"] <- NA
+TChr4_asc <- TChr4_asc[!is.na(TChr4_asc$Position),]
+TChr7_asc[TChr7_asc == "multiple"] <- NA
+TChr7_asc <- TChr7_asc[!is.na(TChr7_asc$Position),]
+TChr9_asc[TChr9_asc == "multiple"] <- NA
+TChr9_asc <- TChr9_asc[!is.na(TChr9_asc$Position),]
+TChr9_des[TChr9_des == "multiple"] <- NA
+TChr9_des <- TChr9_des[!is.na(TChr9_des$Position),]
+TChr7_des[TChr7_des == "multiple"] <- NA
+TChr7_des <- TChr7_des[!is.na(TChr7_des$Position),]
+TChr4_des[TChr4_des == "multiple"] <- NA
+TChr4_des <- TChr4_des[!is.na(TChr4_des$Position),]
+TChr2_des[TChr2_des == "multiple"] <- NA
+TChr2_des <- TChr2_des[!is.na(TChr2_des$Position),]
+ZChr2_des[ZChr2_des == "multiple"] <- NA
+ZChr2_des <- ZChr2_des[!is.na(ZChr2_des$Position),]
+ZChr4_des[ZChr4_des == "multiple"] <- NA
+ZChr4_des <- ZChr4_des[!is.na(ZChr4_des$Position),]
+ZChr6_des[ZChr6_des == "multiple"] <- NA
+ZChr6_des <- ZChr6_des[!is.na(ZChr6_des$Position),]
+ZChr7_des[ZChr7_des == "multiple"] <- NA
+ZChr7_des <- ZChr7_des[!is.na(ZChr7_des$Position),]
+ZChr9_des[ZChr9_des == "multiple"] <- NA
+ZChr9_des <- ZChr9_des[!is.na(ZChr9_des$Position),]
+ZChr9_asc <- ZChr9_asc[!is.na(ZChr9_asc$Position),]
+ZChr9_asc[ZChr9_asc == "multiple"] <- NA
+ZChr9_asc <- ZChr9_asc[!is.na(ZChr9_asc$Position),]
+ZChr7_asc[ZChr7_asc == "multiple"] <- NA
+ZChr7_asc <- ZChr7_asc[!is.na(ZChr7_asc$Position),]
+ZChr6_asc[ZChr6_asc == "multiple"] <- NA
+ZChr6_asc <- ZChr6_asc[!is.na(ZChr6_asc$Position),]
+ZChr4_asc[ZChr4_asc == "multiple"] <- NA
+ZChr4_asc <- ZChr4_asc[!is.na(ZChr4_asc$Position),]
+ZChr2_asc[ZChr2_asc == "multiple"] <- NA
+ZChr2_asc <- ZChr2_asc[!is.na(ZChr2_asc$Position),]
+```
+
+Remove excess columns besides the required ones
+
+```{r}
+TChr1_asc <- TChr1_asc[, -c(4:15)]
+TChr2_asc <- TChr2_asc[, -c(4:15)]
+TChr3_asc <- TChr3_asc[, -c(4:15)]
+TChr4_asc <- TChr4_asc[, -c(4:15)]
+TChr5_asc <- TChr5_asc[, -c(4:15)]
+TChr6_asc <- TChr6_asc[, -c(4:15)]
+TChr7_asc <- TChr7_asc[, -c(4:15)]
+TChr8_asc <- TChr8_asc[, -c(4:15)]
+TChr9_asc <- TChr9_asc[, -c(4:15)]
+TChr10_asc <- TChr10_asc[, -c(4:15)]
+
+TChr1_des <- TChr1_des[, -c(4:15)]
+TChr2_des <- TChr2_des[, -c(4:15)]
+TChr3_des <- TChr3_des[, -c(4:15)]
+TChr4_des <- TChr4_des[, -c(4:15)]
+TChr5_des <- TChr5_des[, -c(4:15)]
+TChr6_des <- TChr6_des[, -c(4:15)]
+TChr7_des <- TChr7_des[, -c(4:15)]
+TChr8_des <- TChr8_des[, -c(4:15)]
+TChr9_des <- TChr9_des[, -c(4:15)]
+TChr10_des <- TChr10_des[, -c(4:15)]
+
+ZChr1_asc <- ZChr1_asc[, -c(4:15)]
+ZChr2_asc <- ZChr2_asc[, -c(4:15)]
+ZChr3_asc <- ZChr3_asc[, -c(4:15)]
+ZChr4_asc <- ZChr4_asc[, -c(4:15)]
+ZChr5_asc <- ZChr5_asc[, -c(4:15)]
+ZChr6_asc <- ZChr6_asc[, -c(4:15)]
+ZChr7_asc <- ZChr7_asc[, -c(4:15)]
+ZChr8_asc <- ZChr8_asc[, -c(4:15)]
+ZChr9_asc <- ZChr9_asc[, -c(4:15)]
+ZChr10_asc <- ZChr10_asc[, -c(4:15)]
+
+ZChr1_des <- ZChr1_des[, -c(4:15)]
+ZChr2_des <- ZChr2_des[, -c(4:15)]
+ZChr3_des <- ZChr3_des[, -c(4:15)]
+ZChr4_des <- ZChr4_des[, -c(4:15)]
+ZChr5_des <- ZChr5_des[, -c(4:15)]
+ZChr6_des <- ZChr6_des[, -c(4:15)]
+ZChr7_des <- ZChr7_des[, -c(4:15)]
+ZChr8_des <- ZChr8_des[, -c(4:15)]
+ZChr9_des <- ZChr9_des[, -c(4:15)]
+ZChr10_des <- ZChr10_des[, -c(4:15)]
+```
+
+Create files
+
+```{r}
+write.table(ZChr1_asc, "Chr1_Maize_ascending.txt", sep = "\t")
+write.table(ZChr2_asc, "Chr2_Maize_ascending.txt", sep = "\t")
+write.table(ZChr3_asc, "Chr3_Maize_ascending.txt", sep = "\t")
+write.table(ZChr4_asc, "Chr4_Maize_ascending.txt", sep = "\t")
+write.table(ZChr5_asc, "Chr5_Maize_ascending.txt", sep = "\t")
+write.table(ZChr6_asc, "Chr6_Maize_ascending.txt", sep = "\t")
+write.table(ZChr7_asc, "Chr7_Maize_ascending.txt", sep = "\t")
+write.table(ZChr8_asc, "Chr8_Maize_ascending.txt", sep = "\t")
+write.table(ZChr9_asc, "Chr9_Maize_ascending.txt", sep = "\t")
+write.table(ZChr10_asc, "Chr10_Maize_ascending.txt", sep = "\t")
+
+write.table(ZChr1_des, "Chr1_Maize_descending.txt", sep = "\t")
+write.table(ZChr2_des, "Chr2_Maize_descending.txt", sep = "\t")
+write.table(ZChr3_des, "Chr3_Maize_descending.txt", sep = "\t")
+write.table(ZChr4_des, "Chr4_Maize_descending.txt", sep = "\t")
+write.table(ZChr5_des, "Chr5_Maize_descending.txt", sep = "\t")
+write.table(ZChr6_des, "Chr6_Maize_descending.txt", sep = "\t")
+write.table(ZChr7_des, "Chr7_Maize_descending.txt", sep = "\t")
+write.table(ZChr8_des, "Chr8_Maize_descending.txt", sep = "\t")
+write.table(ZChr9_des, "Chr9_Maize_descending.txt", sep = "\t")
+write.table(ZChr10_des, "Chr10_Maize_descending.txt", sep = "\t")
+
+write.table(TChr1_asc, "Chr1_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr2_asc, "Chr2_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr3_asc, "Chr3_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr4_asc, "Chr4_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr5_asc, "Chr5_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr6_asc, "Chr6_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr7_asc, "Chr7_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr8_asc, "Chr8_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr9_asc, "Chr9_Teosinte_ascending.txt", sep = "\t")
+write.table(TChr10_asc, "Chr10_Teosinte_ascending.txt", sep = "\t")
+
+write.table(TChr1_des, "Chr1_Teosinte_descending.txt", sep = "\t")
+write.table(TChr2_des, "Chr2_Teosinte_descending.txt", sep = "\t")
+write.table(TChr3_des, "Chr3_Teosinte_descending.txt", sep = "\t")
+write.table(TChr4_des, "Chr4_Teosinte_descending.txt", sep = "\t")
+write.table(TChr5_des, "Chr5_Teosinte_descending.txt", sep = "\t")
+write.table(TChr6_des, "Chr6_Teosinte_descending.txt", sep = "\t")
+write.table(TChr7_des, "Chr7_Teosinte_descending.txt", sep = "\t")
+write.table(TChr8_des, "Chr8_Teosinte_descending.txt", sep = "\t")
+write.table(TChr9_des, "Chr9_Teosinte_descending.txt", sep = "\t")
+write.table(TChr10_des, "Chr10_Teosinte_descending.txt", sep = "\t")
+
+```
+
+## Part 2
+
+Create new file from total original data for the first graph
+```{r}
+trfang <- t(fang)
+dffang <- as.data.frame(trfang, stringsAsFactors = FALSE)
+dffang$Sample_ID <- row.names(dffang)
+fangmerge <- merge(snp,dffang,by.x = "SNP_ID",by.y = "Sample_ID")
+```
+**Corredor_comment= this part is so exciting! Everithing is ready*
+
+Remove multiples and unknowns
+
+```{r}
+fangmerge[fangmerge == "unknown"] <- NA
+fangmerge[fangmerge == "multiple"] <- NA
+fangmerge <- fangmerge[!is.na(fangmerge$Chromosome),]
+```
+
+Create bar plot based off of SNPs per Chromosome
+
+```{r}
+ggplot(fangmerge, aes(Chromosome), fill=Chromosome, color=chromosome) + geom_bar() + labs(title="Number of SNPs per Chromosome", y="SNP Count") + scale_x_discrete(limits=c(1,2,3,4,5,6,7,8,9,10))
+
+```
+**Corredor_comment= Nice first graph!*
+
+Create the second graph comparing homozygosity and heterozygosity across species and groups
+
+```{r}
+fang_rm <- fang[, -c(2)]
+melted_fang <- melt(fang_rm, id.vars = c("Sample_ID", "Group"))
+
+values <- melted_fang$value
+
+melted_fang[melted_fang == "A/A" | melted_fang == "C/C" | melted_fang == "T/T" | melted_fang == "G/G"] <- 0
+melted_fang[melted_fang == "A/T" | melted_fang == "T/A" | melted_fang == "C/G" | melted_fang == "G/C" | melted_fang == "A/C"] <- 1
+melted_fang[melted_fang == "?/?"] <- NA
+melted_fang$Site <- row.names(melted_fang)
+melted_fang$Site <- values
+melted_fang[melted_fang == "?/?"] <- NA
+
+Group <- melted_fang$Group
+melted_fang <- melted_fang[,-c(2)]
+melted_fang$Species_ID <- row.names(melted_fang)
+
+melted_fang[sapply(melted_fang, is.factor)] <- lapply(melted_fang[sapply(melted_fang, is.factor)], as.character)
+
+melted_fang[melted_fang == "ZMMIL" | melted_fang == "ZMMLR" | melted_fang == "ZMMMR"] <- "maize"
+melted_fang[melted_fang == "ZMPBA" | melted_fang == "ZMPIL" | melted_fang == "ZMPJA"] <- "teosinte"
+
+unique(melted_fang$Species_ID)
+melted_fang[melted_fang == "TRIPS" | melted_fang == "ZDIPL" | melted_fang == "ZPERR" | melted_fang == "ZLUXR" | melted_fang == "ZMHUE" | melted_fang == "ZMXCH" | melted_fang == "ZMXCP" | melted_fang == "ZMXNO" | melted_fang == "ZMXNT" | melted_fang == "ZMXIL"] <- "tripsacum"
+
+melted_fang[melted_fang == "0"] <- "homozygous"
+melted_fang[melted_fang == "1"] <- "heterozygous"
+melted_fang[melted_fang == "NA"] <- "unknown"
+
+melted_fang$Group <- row.names(melted_fang)
+melted_fang$Group <- Group
+
+```
+
+```{r}
+ggplot(melted_fang, aes(x = Group, fill = melted_fang$value)) + geom_bar(position = "fill") + facet_grid(Species_ID ~ .) + labs(title = "Proportions of SNPs", x = "Group", y = "Proportion") + scale_fill_discrete(name = "Genotypes") + scale_x_discrete(limits = c("ZMMIL", "ZMMLR", "ZMMMR", "ZMPBA", "ZMPIL", "ZMPJA", "TRIPS", "ZDIPL", "ZLUXR", "ZMHUE", "ZMXCH", "ZMXCP", "ZMXIL", "ZMXNO", "ZMXNT", "ZPERR"))
+```
+
+
+
+Third plot - explore the distribution of SNP positions per Chromosome
+
+```{r}
+snp_rm <- snp[,c("Chromosome", "Position")]
+snp_rm <- snp_rm[order(as.numeric(as.character(snp_rm$Position))), ]
+ggplot(snp_rm, aes(x=Chromosome, y=Position)) + geom_point(size=1, color="grey") + labs(title = "Distribution of SNPs per Chromosome", x = "Chromosome", y="SNP Position") +ylab(NULL) + theme(axis.text.y = element_blank()) + scale_x_discrete(limits=c(1,2,3,4,5,6,7,8,9,10)) + geom_smooth(method='loess', se=FALSE, span=1/10) + scale_y_discrete(limits = NULL )
+```
+
+**Corredor_comment= It is interesting. What do you thing of triyng something like this:*
+```
+p <- ggplot(snp_rm, aes(x=Chromosome, y=Position)) + geom_point(size=1, color="grey")
+
+```
+**Corredor_comment=  You know, I think simple is more elegant* 
+
+**Thanks for sharing!*
+**=)*
+
