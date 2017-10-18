@@ -137,7 +137,7 @@ for(i in 1:10){
   write.csv(T_files, sprintf("TChr_%d_",i),row.names=F )
 }
 ```
-**Corredor_comment= This is my example for the increasing order. It runs correctly**
+**Corredor_comment= That was my example for the increasing order. It runs correctly. You can try for decreasing. Don't forget to use the (-) sign**
 
 ```{r}
 ZChr1 <- zeasort[zeasort$Chromosome == "1", ]
